@@ -2,43 +2,16 @@ syntax = "proto3";
 
 package messaging;
 
-service MapleBotEventService {
-  rpc StartAttackStream(Empty) returns (stream Event);
-  rpc Attack(Event) returns (UploadStatus) {}
+service MapleService {
+  rpc SendChatMessage(ChatMessage) returns (Empty);
+  rpc StartChatMessageStreaming(Empty) returns (stream ChatMessage);
 
 //  rpc Upload(C) returns (UploadStatus) {}
 }
 
-message Event {
-  oneof {
-    attackEvent,
-    messageEvent
-  }
-}
-
-message attackEvent {
-  int32 damage = 2;
-  int32 playerId = 1;
-}
-
-message messageEvent {
-  int32 damage = 2;
-  int32 playerId = 1;
+message ChatMessage {
+  int32 id = 1;
+  string message = 2;
 }
 
 message Empty {}
-
-message Chunk {
-  bytes Content = 1;
-}
-
-enum UploadStatusCode {
-  Unknown = 0;
-  Ok = 1;
-  Failed = 2;
-}
-
-message UploadStatus {
-  string Message = 1;
-  UploadStatusCode Code = 2;
-}
