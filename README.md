@@ -17,6 +17,10 @@ Set-ExecutionPolicy Bypass -Scope Process -Force; `
 
 From Powershell with **admin** 
 ```
+
+# install go
+choch install golang
+
 # install protoc
 choco install protoc --pre
 
@@ -34,9 +38,19 @@ choco install robo3t
 ```
 
 To use mongodb from cli you need to add the mongodb bin directory to
-the PATH environment variable  
+the PATH environment variable
 
- 
+## download the module dependencies 
+```
+cd <root dir> 
+go mod download
+```
+
+## compile proto files
+```
+make grpc
+```
+
 ## using the heroku app 
 
 if you don't familiar with heroku checkout [this link](https://devcenter.heroku.com/articles/getting-started-with-go#set-up) 
@@ -45,6 +59,9 @@ download the heroku cli from [heroku websitehttps](//devcenter.heroku.com/articl
 ```
 # login to heroku
 heroku login
+
+# if you did not alredy created heroku app
+heroku create
 
 # push branch to heroku
 git push heroku <branch>
