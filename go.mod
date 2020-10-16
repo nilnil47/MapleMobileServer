@@ -1,5 +1,6 @@
 module supermaple.cool/maple_mobile_server
 
+// +heroku goVersion go1.15
 go 1.15
 
 require (

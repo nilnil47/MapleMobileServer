@@ -38,9 +38,13 @@ the PATH environment variable
  
 ## using the heroku app 
 
+if you don't familiar with heroku checkout [this link](https://devcenter.heroku.com/articles/getting-started-with-go#set-up) 
 download the heroku cli from [heroku websitehttps](//devcenter.heroku.com/articles/heroku-cli)
 
 ```
 # login to heroku
 heroku login
+
+# push branch to heroku
+git push heroku <branch>
 ```
