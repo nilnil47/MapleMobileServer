@@ -11,7 +11,7 @@ import (
 )
 
 var mainServer = MainServer{
-	grpcServerAddr: "0.0.0.0:50051",
+	grpcServerAddr: "https://secure-tor-35210.herokuapp.com/:50051",
 }
 
 var grpcClient pb.MapleServiceClient

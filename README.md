@@ -54,7 +54,7 @@ make grpc
 ## using the heroku app 
 
 if you don't familiar with heroku checkout [this link](https://devcenter.heroku.com/articles/getting-started-with-go#set-up) 
-download the heroku cli from [heroku websitehttps](//devcenter.heroku.com/articles/heroku-cli)
+download the heroku cli from [heroku websitehttps](https://devcenter.heroku.com/articles/heroku-cli)
 
 ```
 # login to heroku

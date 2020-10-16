@@ -32,8 +32,10 @@ func startMainServer(server MainServer) {
 	}
 
 	// start http files server
-	//http.ListenAndServe(server.httpServerAddr, server.httpFileServer)
-
+	err = http.ListenAndServe(server.httpServerAddr, server.httpFileServer)
+	if err != nil {
+		log.Fatalf("enable to start http server in addres %s", server.httpServerAddr)
+	}
 	// create grpc server
 	s := grpc.NewServer()
 
