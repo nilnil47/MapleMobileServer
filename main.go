@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	pb "supermaple.cool/maple_mobile_server/messaging"
 )
 
@@ -25,6 +26,7 @@ type MainServer struct {
 func startMainServer(server MainServer) {
 
 	// create listener for grpc server
+	fmt.Printf("starting grpc server on %s", server.grpcServerAddr)
 	listener, err := net.Listen("tcp", server.grpcServerAddr)
 
 	if err != nil {
@@ -32,10 +34,10 @@ func startMainServer(server MainServer) {
 	}
 
 	// start http files server
-	err = http.ListenAndServe(server.httpServerAddr, server.httpFileServer)
-	if err != nil {
-		log.Fatalf("enable to start http server in addres %s", server.httpServerAddr)
-	}
+	//err = http.ListenAndServe(server.httpServerAddr, server.httpFileServer)
+	//if err != nil {
+	//	log.Fatalf("enable to start http server in addres %s", server.httpServerAddr)
+	//}
 	// create grpc server
 	s := grpc.NewServer()
 
@@ -85,7 +87,7 @@ func main() {
 	mainServer := MainServer{
 		httpServerAddr: "0.0.0.0:9000",
 		httpFileServer: http.FileServer(http.Dir("http_server_files")),
-		grpcServerAddr: "0.0.0.0:50051",
+		grpcServerAddr:  "0.0.0.0:" + os.Getenv("PORT"),
 	}
 
 	startMainServer(mainServer)
