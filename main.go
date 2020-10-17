@@ -48,6 +48,7 @@ func startMainServer(server MainServer) {
 	// defined in the proto file
 	srv := &MapleServer{
 		clients: map[uuid.UUID]pb.MapleService_EventsStreamServer{},
+		eventQueue: make(chan *pb.RequestEvent),
 	}
 
 	// register the maple service to the server
@@ -103,12 +104,24 @@ func (s *MapleServer) handleDropItem(item *pb.DropItem) {
 			DropItem: item,
 		},
 	}
+	fmt.Printf("send event in broadcast: %v\n", resp)
 	s.broadcast(&resp)
 }
 
 func (s *MapleServer) EventsStream(server pb.MapleService_EventsStreamServer) error {
 	s.clients[uuid.New()] = server
 	fmt.Printf("new client\n clients: %v\n", s.clients)
+	go func() {
+		for {
+			fmt.Printf("wating for event\n")
+			event := <-s.eventQueue
+			fmt.Printf("got event from queue: %v", event)
+			switch event.GetEvent().(type) {
+			case *pb.RequestEvent_DropItem:
+				s.handleDropItem(event.GetDropItem())
+			}
+		}
+	}()
 	//go func() {
 		for {
 			req, err := server.Recv()
@@ -118,16 +131,11 @@ func (s *MapleServer) EventsStream(server pb.MapleService_EventsStreamServer) er
 				//return
 			}
 			log.Printf("got message %+v", req)
-			//s.eventQueue <- req
+			s.eventQueue <- req
+			log.Printf("pushed to queue")
 		}
 	//}()
-	go func() {
-		event := <-s.eventQueue
-		switch event.GetEvent().(type) {
-		case *pb.RequestEvent_DropItem:
-			s.handleDropItem(event.GetDropItem())
-		}
-	}()
+
 
 	//dropItem := requestEvent.GetDropItem()
 	//server.Send(pb.ResponseEvent{

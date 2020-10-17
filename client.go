@@ -46,10 +46,10 @@ func main() {
 		for {
 			res, err := stream.Recv()
 			if err != nil {
-				fmt.Printf("error in recive: %v", err)
+				fmt.Printf("error in recive: %v\n", err)
 				return
 			}
-			fmt.Printf("recive: %v", res)
+			fmt.Printf("recive: %v\n	", res)
 		}
 	}()
 		for {
