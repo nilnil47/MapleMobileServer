@@ -3,6 +3,9 @@ package main
 import (
 	"bufio"
 	"context"
+	"fmt"
+	"math/rand"
+
 	//"fmt"
 	"google.golang.org/grpc"
 	"log"
@@ -39,23 +42,30 @@ func main() {
 	}
 	scanner := bufio.NewScanner(os.Stdin)
 
-	for {
-		scanner.Scan()
-
-		_ = scanner.Text()
-		d := pb.DropItem{
-			Id: 1,
-			X:  2,
-			Y:  3,
+	go func() {
+		for {
+			res, err := stream.Recv()
+			if err != nil {
+				fmt.Printf("error in recive: %v", err)
+				return
+			}
+			fmt.Printf("recive: %v", res)
 		}
+	}()
+		for {
+			scanner.Scan()
 
-		_ = stream.Send(&pb.RequestEvent{Event: &pb.RequestEvent_DropItem{DropItem: &d}})
-		// stream.Recv returns a pointer to a ListBlogRes at the current iteration
-		//event, err := stream.Recv()
-		//if err != nil {
-		//	log.Fatalf("reciving error")
-		//}
-		//fmt.Println(event.GetDropItem())
-	}
-
+			_ = scanner.Text()
+			d := pb.DropItem{
+				Id: int32(rand.Uint32()),
+				X:  2,
+				Y:  3,
+			}
+			fmt.Printf("sends request %v", d)
+			err = stream.Send(&pb.RequestEvent{Event: &pb.RequestEvent_DropItem{DropItem: &d}})
+			if (err != nil) {
+				log.Print(err)
+				return
+			}
+		}
 }

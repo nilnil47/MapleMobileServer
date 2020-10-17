@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/channelz/service"
 	"log"
@@ -10,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	pb "supermaple.cool/maple_mobile_server/messaging"
+	"sync"
 )
 
 //type Server interface {
@@ -44,7 +46,9 @@ func startMainServer(server MainServer) {
 
 	// create maple service which handle all the rpc
 	// defined in the proto file
-	srv := &MapleServer{}
+	srv := &MapleServer{
+		clients: map[uuid.UUID]pb.MapleService_EventsStreamServer{},
+	}
 
 	// register the maple service to the server
 	pb.RegisterMapleServiceServer(s, srv)
@@ -66,14 +70,10 @@ func (MainServer) stop() {
 	panic("implement me")
 }
 
-type MapleServer struct{
-	clients []int
-	stream pb.MapleService_EventsStreamServer
-}
-
-func (s MapleServer) broadcast(event * pb.ResponseEvent) {
-
-	s.stream.Send(event)
+type MapleServer struct {
+	clients    map[uuid.UUID]pb.MapleService_EventsStreamServer
+	mu         sync.RWMutex
+	eventQueue chan *pb.RequestEvent
 }
 
 func (s MapleServer) Connect(ctx context.Context, request *pb.ConnectRequest) (*pb.ConnectResponse, error) {
@@ -81,21 +81,53 @@ func (s MapleServer) Connect(ctx context.Context, request *pb.ConnectRequest) (*
 	return &pb.ConnectResponse{}, nil
 }
 
-func (MapleServer) EventsStream(server pb.MapleService_EventsStreamServer) error {
-	requestEvent, err := server.Recv()
-	//eventque.push(requestEvent)
-	if err != nil {
-		log.Fatalf("error in event stream:%v", err)
+func (s *MapleServer) broadcast(resp *pb.ResponseEvent) {
+	s.mu.Lock()
+	for id, streamServer := range s.clients {
+		if streamServer == nil {
+			continue
+		}
+		if err := streamServer.Send(resp); err != nil {
+			log.Printf("%s - broadcast error %v", id, err)
+			//currentClient.done <- errors.New("failed to broadcast message")
+			continue
+		}
+		log.Printf("%s - broadcasted %+v", resp, id)
 	}
+	s.mu.Unlock()
+}
 
-	d := pb.DropItem{
-		Id: requestEvent.GetDropItem().Id,
-		X:  requestEvent.GetDropItem().X,
-		Y:  requestEvent.GetDropItem().Y,
+func (s *MapleServer) handleDropItem(item *pb.DropItem) {
+	resp := pb.ResponseEvent{
+		Event: &pb.ResponseEvent_DropItem{
+			DropItem: item,
+		},
 	}
+	s.broadcast(&resp)
+}
 
-	fmt.Print(d)
-	_ = server.Send(&pb.ResponseEvent{Event: &pb.ResponseEvent_DropItem{DropItem: &d}})
+func (s *MapleServer) EventsStream(server pb.MapleService_EventsStreamServer) error {
+	s.clients[uuid.New()] = server
+	fmt.Printf("new client\n clients: %v\n", s.clients)
+	//go func() {
+		for {
+			req, err := server.Recv()
+			if err != nil {
+				log.Printf("receive error %v", err)
+				//currentClient.done <- errors.New("failed to receive request")
+				//return
+			}
+			log.Printf("got message %+v", req)
+			//s.eventQueue <- req
+		}
+	//}()
+	go func() {
+		event := <-s.eventQueue
+		switch event.GetEvent().(type) {
+		case *pb.RequestEvent_DropItem:
+			s.handleDropItem(event.GetDropItem())
+		}
+	}()
 
 	//dropItem := requestEvent.GetDropItem()
 	//server.Send(pb.ResponseEvent{
@@ -104,8 +136,7 @@ func (MapleServer) EventsStream(server pb.MapleService_EventsStreamServer) error
 	//	X:  0,
 	//	Y:  0,
 	//}})
-
-	return err
+	return nil
 }
 
 //func (s *MapleServiceServer) SendChatMessage()  {
@@ -119,7 +150,7 @@ func main() {
 	mainServer := MainServer{
 		httpServerAddr: "0.0.0.0:9000",
 		httpFileServer: http.FileServer(http.Dir("http_server_files")),
-		grpcServerAddr:  "0.0.0.0:" + os.Getenv("PORT"),
+		grpcServerAddr: "0.0.0.0:" + os.Getenv("PORT"),
 	}
 
 	startMainServer(mainServer)
