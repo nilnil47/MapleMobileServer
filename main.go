@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/channelz/service"
 	"log"
 	"net"
 	"net/http"
@@ -43,10 +44,12 @@ func startMainServer(server MainServer) {
 
 	// create maple service which handle all the rpc
 	// defined in the proto file
-	srv := &MapleServiceServer{}
+	srv := &MapleServer{}
 
 	// register the maple service to the server
 	pb.RegisterMapleServiceServer(s, srv)
+
+	service.RegisterChannelzServiceToServer(s)
 
 	err = s.Serve(listener)
 	if err != nil {
@@ -63,17 +66,46 @@ func (MainServer) stop() {
 	panic("implement me")
 }
 
-type MapleServiceServer struct{}
-
-func (MapleServiceServer) SendChatMessage(ctx context.Context, message *pb.ChatMessage) (*pb.Empty, error) {
-	panic("implement me")
+type MapleServer struct{
+	clients []int
+	stream pb.MapleService_EventsStreamServer
 }
 
-func (MapleServiceServer) StartChatMessageStreaming(empty *pb.Empty, stream pb.MapleService_StartChatMessageStreamingServer) error {
-	for {
-		fmt.Println("sending")
-		stream.Send(&pb.ChatMessage{Id: 1, Message: "ss"})
+func (s MapleServer) broadcast(event * pb.ResponseEvent) {
+
+	s.stream.Send(event)
+}
+
+func (s MapleServer) Connect(ctx context.Context, request *pb.ConnectRequest) (*pb.ConnectResponse, error) {
+	println("connect")
+	return &pb.ConnectResponse{}, nil
+}
+
+func (MapleServer) EventsStream(server pb.MapleService_EventsStreamServer) error {
+	requestEvent, err := server.Recv()
+	//eventque.push(requestEvent)
+	if err != nil {
+		log.Fatalf("error in event stream:%v", err)
 	}
+
+	d := pb.DropItem{
+		Id: requestEvent.GetDropItem().Id,
+		X:  requestEvent.GetDropItem().X,
+		Y:  requestEvent.GetDropItem().Y,
+	}
+
+	fmt.Print(d)
+	_ = server.Send(&pb.ResponseEvent{Event: &pb.ResponseEvent_DropItem{DropItem: &d}})
+
+	//dropItem := requestEvent.GetDropItem()
+	//server.Send(pb.ResponseEvent{
+	//	Event: pb.DropItem{
+	//	Id: 0,
+	//	X:  0,
+	//	Y:  0,
+	//}})
+
+	return err
 }
 
 //func (s *MapleServiceServer) SendChatMessage()  {
