@@ -13,7 +13,6 @@ import (
 	pb "supermaple.cool/maple_mobile_server/messaging"
 )
 
-
 var grpcClient pb.MapleServiceClient
 
 func clientSetup() pb.MapleServiceClient {
@@ -31,7 +30,6 @@ func setup() {
 	// start the server on a different thread which wont stuck the testing thread
 	//go startMainServer(mainServer)
 }
-
 
 func main() {
 	//var name string
@@ -52,20 +50,26 @@ func main() {
 			fmt.Printf("recive: %v\n	", res)
 		}
 	}()
-		for {
-			scanner.Scan()
+	for {
+		scanner.Scan()
 
-			_ = scanner.Text()
-			d := pb.DropItem{
-				Id: int32(rand.Uint32()),
-				X:  2,
-				Y:  3,
-			}
-			fmt.Printf("sends request %v", d)
-			err = stream.Send(&pb.RequestEvent{Event: &pb.RequestEvent_DropItem{DropItem: &d}})
-			if (err != nil) {
-				log.Print(err)
-				return
-			}
+		_ = scanner.Text()
+		d := pb.RequestDropItem{
+			Id:    int32(rand.Uint32()),
+			Count: 13,
+			Owner: 4,
+			Start: &pb.Point{
+				X: 5,
+				Y: 6,
+			},
+			Invtype: 11,
+			Slotid:  12,
 		}
+		fmt.Printf("sends request %v", d)
+		err = stream.Send(&pb.RequestEvent{Event: &pb.RequestEvent_DropItem{DropItem: &d}})
+		if err != nil {
+			log.Print(err)
+			return
+		}
+	}
 }

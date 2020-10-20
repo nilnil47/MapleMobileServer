@@ -7,9 +7,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/channelz/service"
 	"log"
+	"math/rand"
 	"net"
 	"net/http"
-	"os"
 	pb "supermaple.cool/maple_mobile_server/messaging"
 	"sync"
 )
@@ -47,7 +47,7 @@ func startMainServer(server MainServer) {
 	// create maple service which handle all the rpc
 	// defined in the proto file
 	srv := &MapleServer{
-		clients: map[uuid.UUID]pb.MapleService_EventsStreamServer{},
+		clients:    map[uuid.UUID]pb.MapleService_EventsStreamServer{},
 		eventQueue: make(chan *pb.RequestEvent),
 	}
 
@@ -98,10 +98,16 @@ func (s *MapleServer) broadcast(resp *pb.ResponseEvent) {
 	s.mu.Unlock()
 }
 
-func (s *MapleServer) handleDropItem(item *pb.DropItem) {
+func (s *MapleServer) handleDropItem(item *pb.RequestDropItem) {
 	resp := pb.ResponseEvent{
 		Event: &pb.ResponseEvent_DropItem{
-			DropItem: item,
+			DropItem: &pb.ResponseDropItem{
+				// the oid is random uint32 number for now
+				Oid:   rand.Int31(),
+				Id:    item.Id,
+				Owner: item.Owner,
+				Start: item.Start,
+			},
 		},
 	}
 	fmt.Printf("send event in broadcast: %v\n", resp)
@@ -123,19 +129,18 @@ func (s *MapleServer) EventsStream(server pb.MapleService_EventsStreamServer) er
 		}
 	}()
 	//go func() {
-		for {
-			req, err := server.Recv()
-			if err != nil {
-				log.Printf("receive error %v", err)
-				//currentClient.done <- errors.New("failed to receive request")
-				//return
-			}
-			log.Printf("got message %+v", req)
-			s.eventQueue <- req
-			log.Printf("pushed to queue")
+	for {
+		req, err := server.Recv()
+		if err != nil {
+			log.Printf("receive error %v", err)
+			//currentClient.done <- errors.New("failed to receive request")
+			//return
 		}
+		log.Printf("got message %+v", req)
+		s.eventQueue <- req
+		log.Printf("pushed to queue")
+	}
 	//}()
-
 
 	//dropItem := requestEvent.GetDropItem()
 	//server.Send(pb.ResponseEvent{
@@ -158,7 +163,7 @@ func main() {
 	mainServer := MainServer{
 		httpServerAddr: "0.0.0.0:9000",
 		httpFileServer: http.FileServer(http.Dir("http_server_files")),
-		grpcServerAddr: "0.0.0.0:" + os.Getenv("PORT"),
+		grpcServerAddr: "0.0.0.0:50051",
 	}
 
 	startMainServer(mainServer)
