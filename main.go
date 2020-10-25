@@ -107,10 +107,11 @@ func (s *MapleServer) handleDropItem(item *pb.RequestDropItem) {
 				Id:    item.Id,
 				Owner: item.Owner,
 				Start: item.Start,
+				Mapid: item.Mapid,
 			},
 		},
 	}
-	fmt.Printf("send event in broadcast: %v\n", resp)
+	log.Print("send event in broadcast: %v\n", &resp)
 	s.broadcast(&resp)
 }
 
@@ -133,6 +134,7 @@ func (s *MapleServer) EventsStream(server pb.MapleService_EventsStreamServer) er
 		req, err := server.Recv()
 		if err != nil {
 			log.Printf("receive error %v", err)
+			return nil
 			//currentClient.done <- errors.New("failed to receive request")
 			//return
 		}
