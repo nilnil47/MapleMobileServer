@@ -3,15 +3,16 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/google/uuid"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/channelz/service"
 	"log"
 	"math/rand"
 	"net"
 	"net/http"
-	pb "supermaple.cool/maple_mobile_server/messaging"
 	"sync"
+
+	"github.com/google/uuid"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/channelz/service"
+	pb "supermaple.cool/maple_mobile_server/messaging"
 )
 
 //type Server interface {
@@ -165,7 +166,7 @@ func main() {
 	mainServer := MainServer{
 		httpServerAddr: "0.0.0.0:9000",
 		httpFileServer: http.FileServer(http.Dir("http_server_files")),
-		grpcServerAddr: "0.0.0.0:50051",
+		grpcServerAddr: "0.0.0.0:80",
 	}
 
 	startMainServer(mainServer)

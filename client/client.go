@@ -7,9 +7,10 @@ import (
 	"math/rand"
 
 	//"fmt"
-	"google.golang.org/grpc"
 	"log"
 	"os"
+
+	"google.golang.org/grpc"
 	pb "supermaple.cool/maple_mobile_server/messaging"
 )
 
@@ -18,7 +19,7 @@ var grpcClient pb.MapleServiceClient
 func clientSetup() pb.MapleServiceClient {
 	requestOpts := grpc.WithInsecure()
 	// Dial the server, returns a client connection
-	conn, err := grpc.Dial("10.147.20.164:50051", requestOpts)
+	conn, err := grpc.Dial("10.147.20.164:80", requestOpts)
 	if err != nil {
 		log.Fatalf("Unable to establish client connection to localhost:50051: %v", err)
 	}
@@ -65,7 +66,7 @@ func main() {
 			Invtype: 11,
 			Slotid:  12,
 		}
-		fmt.Printf("sends request %v", d)
+		log.Printf("sends request %v", &d)
 		err = stream.Send(&pb.RequestEvent{Event: &pb.RequestEvent_DropItem{DropItem: &d}})
 		if err != nil {
 			log.Print(err)

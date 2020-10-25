@@ -40,6 +40,11 @@ choco install robo3t
 To use mongodb from cli you need to add the mongodb bin directory to
 the PATH environment variable
 
+### install for ubunto
+```
+sudo snap install go
+```
+
 ## download the module dependencies 
 ```
 cd <root dir> 
