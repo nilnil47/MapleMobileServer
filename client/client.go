@@ -14,12 +14,15 @@ import (
 	pb "supermaple.cool/maple_mobile_server/messaging"
 )
 
+// var serverConnectionString = "137.135.90.47:80"
+var serverConnectionString = "localhost:80"
+
 var grpcClient pb.MapleServiceClient
 
 func clientSetup() pb.MapleServiceClient {
 	requestOpts := grpc.WithInsecure()
 	// Dial the server, returns a client connection
-	conn, err := grpc.Dial("10.147.20.164:80", requestOpts)
+	conn, err := grpc.Dial(serverConnectionString, requestOpts)
 	if err != nil {
 		log.Fatalf("Unable to establish client connection to localhost:50051: %v", err)
 	}

@@ -117,13 +117,15 @@ func (s *MapleServer) handleDropItem(item *pb.RequestDropItem) {
 }
 
 func (s *MapleServer) EventsStream(server pb.MapleService_EventsStreamServer) error {
-	s.clients[uuid.New()] = server
-	fmt.Printf("new client\n clients: %v\n", s.clients)
+	//todo: change this
+	clientUuid := uuid.New()
+	s.clients[clientUuid] = server
+	log.Printf("new client\n clients: %v\n", s.clients)
 	go func() {
 		for {
-			fmt.Printf("wating for event\n")
+			log.Printf("wating for event\n")
 			event := <-s.eventQueue
-			fmt.Printf("got event from queue: %v", event)
+			log.Printf("got event from queue: %v", event)
 			switch event.GetEvent().(type) {
 			case *pb.RequestEvent_DropItem:
 				s.handleDropItem(event.GetDropItem())
@@ -135,6 +137,7 @@ func (s *MapleServer) EventsStream(server pb.MapleService_EventsStreamServer) er
 		req, err := server.Recv()
 		if err != nil {
 			log.Printf("receive error %v", err)
+			delete(s.clients, clientUuid)
 			return nil
 			//currentClient.done <- errors.New("failed to receive request")
 			//return
