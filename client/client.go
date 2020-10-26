@@ -14,8 +14,9 @@ import (
 	pb "supermaple.cool/maple_mobile_server/messaging"
 )
 
-// var serverConnectionString = "137.135.90.47:80"
-var serverConnectionString = "localhost:80"
+var serverConnectionString = "137.135.90.47:80"
+
+// var serverConnectionString = "localhost:80"
 
 var grpcClient pb.MapleServiceClient
 
