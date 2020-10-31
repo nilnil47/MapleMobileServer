@@ -110,6 +110,20 @@ func (s *MapleServer) handleExpressionButton(button *pb.ExpressionButton, charId
 	s.broadcast(&resp)
 }
 
+func (s *MapleServer) handlePlayerConnect(playerConnection *pb.RequestPlayerConnect, charId int32) {
+	resp := pb.ResponseEvent{
+		Event: &pb.ResponseEvent_PlayerConnected {
+			PlayerConnected: &pb.ResponsePlayerConnected{
+				Charid: charId,
+				Hair:   3000066,
+				Skin:   2000,
+				Face:   20000,
+			},
+		},
+	}
+	s.broadcast(&resp)
+}
+
 func (s *MapleServer) handleDropItem(item *pb.RequestDropItem) {
 	resp := pb.ResponseEvent{
 		Event: &pb.ResponseEvent_DropItem{
@@ -149,6 +163,8 @@ func (s *MapleServer) EventsStream(server pb.MapleService_EventsStreamServer) er
 					s.handlePressButton(event.GetPressButton(), client.charId)
 				case *pb.RequestEvent_ExpressionButton:
 					s.handleExpressionButton(event.GetExpressionButton(), client.charId)
+				case *pb.RequestEvent_PlayerConnect:
+					s.handlePlayerConnect(event.GetPlayerConnect(), client.charId)
 			}
 		}
 	}()

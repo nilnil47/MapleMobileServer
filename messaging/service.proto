@@ -11,6 +11,7 @@ message RequestEvent {
     RequestDropItem dropItem = 1;
     PressButton pressButton = 2;
     ExpressionButton expressionButton = 3;
+    RequestPlayerConnect playerConnect = 4;
   }
 }
 
@@ -19,7 +20,19 @@ message ResponseEvent {
     ResponseDropItem dropItem = 1;
     PressButton pressButton = 2;
     ExpressionButton expressionButton = 3;
+    ResponsePlayerConnected playerConnected = 4;
   }
+}
+
+message RequestPlayerConnect {
+  int32 charid = 1;
+}
+
+message ResponsePlayerConnected {
+  int32 charid = 1;
+  int32 hair = 2;
+  int32 skin = 3;
+  int32 face = 4;
 }
 
 message PressButton {
@@ -52,9 +65,9 @@ message ResponseDropItem {
 }
 
 enum DropState {
-    DROPPED = 0;
-    FLOATING = 1;
-    PICKEDUP = 2;
+  DROPPED = 0;
+  FLOATING = 1;
+  PICKEDUP = 2;
 }
 
 message Point {
@@ -62,10 +75,3 @@ message Point {
   float y = 2;
 }
 
-message connectRequest {
-
-}
-
-message connectResponse {
-
-}
