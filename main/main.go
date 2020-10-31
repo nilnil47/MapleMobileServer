@@ -13,11 +13,6 @@ import (
 	pb "supermaple.cool/maple_mobile_server/messaging"
 )
 
-//type Server interface {
-//	start()
-//	stop()
-//}
-
 type MainServer struct {
 	httpServerAddr string
 	httpFileServer http.Handler
@@ -48,6 +43,7 @@ func startMainServer(server MainServer) {
 	var srv = &MapleServer{
 		clients:    map[int32]Client{},
 		eventQueue: make(chan *pb.RequestEvent),
+		currentCharId: 1,
 	} // register the maple service to the server
 	pb.RegisterMapleServiceServer(s, srv)
 
@@ -74,9 +70,17 @@ type MapleServer struct {
 	eventQueue    chan *pb.RequestEvent
 }
 
-func (s *MapleServer) broadcast(resp *pb.ResponseEvent) {
+func (s * MapleServer) sendToClient (charId int32, resp *pb.ResponseEvent) {
+	log.Printf("%s - broadcasted %+v", resp, charId)
+	s.clients[charId].networkHandler.Send(resp)
+}
+
+func (s *MapleServer) broadcast(resp *pb.ResponseEvent, doNotSendTO int32) {
 	s.mu.Lock()
 	for id, client := range s.clients {
+		if id == doNotSendTO {
+			continue
+		}
 		if client.networkHandler == nil {
 			continue
 		}
@@ -97,7 +101,7 @@ func (s *MapleServer) handlePressButton(button *pb.PressButton, charId int32) {
 			PressButton: button,
 		},
 	}
-	s.broadcast(&resp)
+	s.broadcast(&resp, 0)
 }
 
 func (s *MapleServer) handleExpressionButton(button *pb.ExpressionButton, charId int32) {
@@ -107,7 +111,7 @@ func (s *MapleServer) handleExpressionButton(button *pb.ExpressionButton, charId
 			ExpressionButton: button,
 		},
 	}
-	s.broadcast(&resp)
+	s.broadcast(&resp, 0)
 }
 
 func (s *MapleServer) handlePlayerConnect(playerConnection *pb.RequestPlayerConnect, charId int32) {
@@ -115,13 +119,14 @@ func (s *MapleServer) handlePlayerConnect(playerConnection *pb.RequestPlayerConn
 		Event: &pb.ResponseEvent_PlayerConnected {
 			PlayerConnected: &pb.ResponsePlayerConnected{
 				Charid: charId,
-				Hair:   3000066,
-				Skin:   2000,
+				Hair:   30066,
+				Skin:   0,
 				Face:   20000,
 			},
 		},
 	}
-	s.broadcast(&resp)
+	s.sendToClient(charId, &resp)
+	s.broadcast(&resp, charId)
 }
 
 func (s *MapleServer) handleDropItem(item *pb.RequestDropItem) {
@@ -138,7 +143,7 @@ func (s *MapleServer) handleDropItem(item *pb.RequestDropItem) {
 		},
 	}
 	log.Print("send event in broadcast: %v\n", &resp)
-	s.broadcast(&resp)
+	s.broadcast(&resp, 0)
 }
 
 func (s *MapleServer) EventsStream(server pb.MapleService_EventsStreamServer) error {
@@ -148,6 +153,7 @@ func (s *MapleServer) EventsStream(server pb.MapleService_EventsStreamServer) er
 	}
 
 	s.clients[s.currentCharId] = client
+	s.currentCharId += 1
 
 	log.Printf("new client\n clients: %v\n", s.clients)
 	go func() {
@@ -165,6 +171,7 @@ func (s *MapleServer) EventsStream(server pb.MapleService_EventsStreamServer) er
 					s.handleExpressionButton(event.GetExpressionButton(), client.charId)
 				case *pb.RequestEvent_PlayerConnect:
 					s.handlePlayerConnect(event.GetPlayerConnect(), client.charId)
+
 			}
 		}
 	}()
