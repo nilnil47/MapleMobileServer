@@ -71,3 +71,6 @@ heroku create
 # push branch to heroku
 git push heroku <branch>
 ```
+## download the maple assets from google drive
+
+wget https://drive.google.com/u/0/uc?export=download&confirm=heN6&id=18Ta2zVqfiPbENb_PKCGh2iOsM1v20rFq
