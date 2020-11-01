@@ -72,6 +72,7 @@ type MapleServer struct {
 
 func (s * MapleServer) sendToClient (charId int32, resp *pb.ResponseEvent) {
 	log.Printf("%s - broadcasted %+v", resp, charId)
+	//fixme: there is null pointer bag here
 	s.clients[charId].networkHandler.Send(resp)
 }
 
@@ -115,7 +116,7 @@ func (s *MapleServer) handleExpressionButton(button *pb.ExpressionButton, charId
 }
 
 func (s *MapleServer) handlePlayerConnect(playerConnection *pb.RequestPlayerConnect, charId int32) {
-	resp := pb.ResponseEvent{
+	senderResp := pb.ResponseEvent{
 		Event: &pb.ResponseEvent_PlayerConnected {
 			PlayerConnected: &pb.ResponsePlayerConnected{
 				Charid: charId,
@@ -125,8 +126,21 @@ func (s *MapleServer) handlePlayerConnect(playerConnection *pb.RequestPlayerConn
 			},
 		},
 	}
-	s.sendToClient(charId, &resp)
-	s.broadcast(&resp, charId)
+
+	broadcastResp := pb.ResponseEvent{
+		Event: &pb.ResponseEvent_OtherPlayerConnected {
+			OtherPlayerConnected: &pb.ResponseOtherPlayerConnected{
+				Charid: charId,
+				Hair:   30066,
+				Skin:   0,
+				Face:   20000,
+			},
+		},
+	}
+
+
+	s.sendToClient(charId, &senderResp)
+	s.broadcast(&broadcastResp, charId)
 }
 
 func (s *MapleServer) handleDropItem(item *pb.RequestDropItem) {
@@ -153,7 +167,7 @@ func (s *MapleServer) EventsStream(server pb.MapleService_EventsStreamServer) er
 	}
 
 	s.clients[s.currentCharId] = client
-	s.currentCharId += 1
+	s.currentCharId = rand.Int31() //todo: change
 
 	log.Printf("new client\n clients: %v\n", s.clients)
 	go func() {
