@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/rand"
 
-	//"fmt"
 	"log"
 	"os"
 

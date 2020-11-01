@@ -5,7 +5,6 @@ import (
 	"log"
 	"math/rand"
 	"net"
-	"net/http"
 	"sync"
 
 	"google.golang.org/grpc"
@@ -14,9 +13,6 @@ import (
 )
 
 type MainServer struct {
-	httpServerAddr string
-	httpFileServer http.Handler
-
 	grpcServerAddr string
 }
 
@@ -30,11 +26,6 @@ func startMainServer(server MainServer) {
 		log.Fatalf("Unable to listen on port %s: %v", server.grpcServerAddr, err)
 	}
 
-	// start http files server
-	//err = http.ListenAndServe(server.httpServerAddr, server.httpFileServer)
-	//if err != nil {
-	//	log.Fatalf("enable to start http server in addres %s", server.httpServerAddr)
-	//}
 	// create grpc server
 	s := grpc.NewServer()
 
@@ -42,19 +33,21 @@ func startMainServer(server MainServer) {
 	// defined in the proto file
 	var srv = &MapleServer{
 		clients:    map[int32]Client{},
-		eventQueue: make(chan *pb.RequestEvent),
+		eventQueue: make(chan eventQueueMessage),
 		currentCharId: 1,
 	} // register the maple service to the server
 	pb.RegisterMapleServiceServer(s, srv)
 
 	service.RegisterChannelzServiceToServer(s)
 
+	// start event queue worker
+	go srv.startEventWorker()
+
 	err = s.Serve(listener)
 	if err != nil {
 		log.Fatalf("Failed to serve: %v", err)
 		return
 	}
-
 }
 
 type Client struct {
@@ -62,17 +55,20 @@ type Client struct {
 	networkHandler  pb.MapleService_EventsStreamServer
 }
 
+type eventQueueMessage struct {
+	event         *pb.RequestEvent
+	charId        int32
+}
 
 type MapleServer struct {
 	currentCharId int32
 	clients       map[int32]Client
 	mu            sync.RWMutex
-	eventQueue    chan *pb.RequestEvent
+	eventQueue    chan eventQueueMessage
 }
 
 func (s * MapleServer) sendToClient (charId int32, resp *pb.ResponseEvent) {
 	log.Printf("%s - broadcasted %+v", resp, charId)
-	//fixme: there is null pointer bag here
 	s.clients[charId].networkHandler.Send(resp)
 }
 
@@ -172,11 +168,13 @@ func (s *MapleServer) listenToEvents(server pb.MapleService_EventsStreamServer, 
 			log.Printf("receive error %v", err)
 			delete(s.clients, client.charId)
 			return err
-			//currentClient.done <- errors.New("failed to receive request")
-			//return
 		}
+
 		log.Printf("got message %+v", req)
-		s.eventQueue <- req
+		s.eventQueue <- eventQueueMessage{
+			event:  req,
+			charId: client.charId,
+		}
 	}
 }
 
@@ -184,18 +182,18 @@ func (s *MapleServer) startEventWorker () {
 
 	for {
 		log.Printf("wating for event\n")
-		event := <-s.eventQueue
-		log.Printf("got event from queue: %v", event)
+		eventMessage := <-s.eventQueue
+		log.Printf("got event from queue: %v, charId: %d", eventMessage.event, eventMessage.charId)
 
-		switch event.GetEvent().(type) {
+		switch eventMessage.event.GetEvent().(type) {
 		case *pb.RequestEvent_DropItem:
-			s.handleDropItem(event.GetDropItem())
+			s.handleDropItem(eventMessage.event.GetDropItem())
 		case *pb.RequestEvent_PressButton:
-			s.handlePressButton(event.GetPressButton(), client.charId)
+			s.handlePressButton(eventMessage.event.GetPressButton(), eventMessage.charId)
 		case *pb.RequestEvent_ExpressionButton:
-			s.handleExpressionButton(event.GetExpressionButton(), client.charId)
+			s.handleExpressionButton(eventMessage.event.GetExpressionButton(), eventMessage.charId)
 		case *pb.RequestEvent_PlayerConnect:
-			s.handlePlayerConnect(event.GetPlayerConnect(), client.charId)
+			s.handlePlayerConnect(eventMessage.event.GetPlayerConnect(), eventMessage.charId)
 
 		}
 	}
