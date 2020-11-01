@@ -134,6 +134,11 @@ func (s *MapleServer) handlePlayerConnect(playerConnection *pb.RequestPlayerConn
 				Hair:   30066,
 				Skin:   0,
 				Face:   20000,
+				State: 1,
+				Pos: &pb.Point{
+					X: 5094,
+					Y: 117,
+				},
 			},
 		},
 	}
@@ -159,9 +164,46 @@ func (s *MapleServer) handleDropItem(item *pb.RequestDropItem) {
 	log.Print("send event in broadcast: %v\n", &resp)
 	s.broadcast(&resp, 0)
 }
+// listen to event from the stream
+func (s *MapleServer) listenToEvents(server pb.MapleService_EventsStreamServer, client Client) error {
+	for {
+		req, err := server.Recv()
+		if err != nil {
+			log.Printf("receive error %v", err)
+			delete(s.clients, client.charId)
+			return err
+			//currentClient.done <- errors.New("failed to receive request")
+			//return
+		}
+		log.Printf("got message %+v", req)
+		s.eventQueue <- req
+	}
+}
+
+func (s *MapleServer) startEventWorker () {
+
+	for {
+		log.Printf("wating for event\n")
+		event := <-s.eventQueue
+		log.Printf("got event from queue: %v", event)
+
+		switch event.GetEvent().(type) {
+		case *pb.RequestEvent_DropItem:
+			s.handleDropItem(event.GetDropItem())
+		case *pb.RequestEvent_PressButton:
+			s.handlePressButton(event.GetPressButton(), client.charId)
+		case *pb.RequestEvent_ExpressionButton:
+			s.handleExpressionButton(event.GetExpressionButton(), client.charId)
+		case *pb.RequestEvent_PlayerConnect:
+			s.handlePlayerConnect(event.GetPlayerConnect(), client.charId)
+
+		}
+	}
+}
+
 
 func (s *MapleServer) EventsStream(server pb.MapleService_EventsStreamServer) error {
-	client := Client{
+	client := Client {
 		charId:         s.currentCharId,
 		networkHandler: server,
 	}
@@ -170,39 +212,8 @@ func (s *MapleServer) EventsStream(server pb.MapleService_EventsStreamServer) er
 	s.currentCharId = rand.Int31() //todo: change
 
 	log.Printf("new client\n clients: %v\n", s.clients)
-	go func() {
-		for {
-			log.Printf("wating for event\n")
-			event := <-s.eventQueue
-			log.Printf("got event from queue: %v", event)
 
-			switch event.GetEvent().(type) {
-				case *pb.RequestEvent_DropItem:
-					s.handleDropItem(event.GetDropItem())
-				case *pb.RequestEvent_PressButton:
-					s.handlePressButton(event.GetPressButton(), client.charId)
-				case *pb.RequestEvent_ExpressionButton:
-					s.handleExpressionButton(event.GetExpressionButton(), client.charId)
-				case *pb.RequestEvent_PlayerConnect:
-					s.handlePlayerConnect(event.GetPlayerConnect(), client.charId)
-
-			}
-		}
-	}()
-
-	for {
-		req, err := server.Recv()
-		if err != nil {
-			log.Printf("receive error %v", err)
-			delete(s.clients, client.charId)
-			return nil
-			//currentClient.done <- errors.New("failed to receive request")
-			//return
-		}
-		log.Printf("got message %+v", req)
-		s.eventQueue <- req
-		log.Printf("pushed to queue")
-	}
+	return s.listenToEvents(server, client)
 }
 
 func main() {
