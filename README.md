@@ -77,6 +77,5 @@ wget https://drive.google.com/u/0/uc?export=download&confirm=heN6&id=18Ta2zVqfiP
 
 ## kill the server on windows 
 ```
-Get-Process -Id (Get-NetTCPConnection -LocalPort 80).OwningProcess
-taskkill /PID <PID> /F
+Get-Process -Id (Get-NetTCPConnection -LocalPort 3667).OwningProcess taskkill /PID <PID> /F
 ```

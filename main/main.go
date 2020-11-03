@@ -32,8 +32,8 @@ func startMainServer(server MainServer) {
 	// create maple service which handle all the rpc
 	// defined in the proto file
 	var srv = &MapleServer{
-		clients:    map[int32]Client{},
-		eventQueue: make(chan eventQueueMessage),
+		clients:       map[int32]Client{},
+		eventQueue:    make(chan eventQueueMessage),
 		currentCharId: 1,
 	} // register the maple service to the server
 	pb.RegisterMapleServiceServer(s, srv)
@@ -51,13 +51,13 @@ func startMainServer(server MainServer) {
 }
 
 type Client struct {
-	charId          int32
-	networkHandler  pb.MapleService_EventsStreamServer
+	charId         int32
+	networkHandler pb.MapleService_EventsStreamServer
 }
 
 type eventQueueMessage struct {
-	event         *pb.RequestEvent
-	charId        int32
+	event  *pb.RequestEvent
+	charId int32
 }
 
 type MapleServer struct {
@@ -67,7 +67,7 @@ type MapleServer struct {
 	eventQueue    chan eventQueueMessage
 }
 
-func (s * MapleServer) sendToClient (charId int32, resp *pb.ResponseEvent) {
+func (s *MapleServer) sendToClient(charId int32, resp *pb.ResponseEvent) {
 	log.Printf("%s - broadcasted %+v", resp, charId)
 	s.clients[charId].networkHandler.Send(resp)
 }
@@ -111,9 +111,19 @@ func (s *MapleServer) handleExpressionButton(button *pb.ExpressionButton, charId
 	s.broadcast(&resp, 0)
 }
 
+func (s *MapleServer) handleUpdatePlayerState(updatePlayerState *pb.UpdatePlayerState, charId int32) {
+	updatePlayerState.Charid = charId
+	resp := pb.ResponseEvent{
+		Event: &pb.ResponseEvent_OtherPlayerStateUpdated{
+			OtherPlayerStateUpdated: updatePlayerState,
+		},
+	}
+	s.broadcast(&resp, 0)
+}
+
 func (s *MapleServer) handlePlayerConnect(playerConnection *pb.RequestPlayerConnect, charId int32) {
 	senderResp := pb.ResponseEvent{
-		Event: &pb.ResponseEvent_PlayerConnected {
+		Event: &pb.ResponseEvent_PlayerConnected{
 			PlayerConnected: &pb.ResponsePlayerConnected{
 				Charid: charId,
 				Hair:   30066,
@@ -124,13 +134,13 @@ func (s *MapleServer) handlePlayerConnect(playerConnection *pb.RequestPlayerConn
 	}
 
 	broadcastResp := pb.ResponseEvent{
-		Event: &pb.ResponseEvent_OtherPlayerConnected {
+		Event: &pb.ResponseEvent_OtherPlayerConnected{
 			OtherPlayerConnected: &pb.ResponseOtherPlayerConnected{
 				Charid: charId,
 				Hair:   30066,
 				Skin:   0,
 				Face:   20000,
-				State: 1,
+				State:  1,
 				Pos: &pb.Point{
 					X: 5094,
 					Y: 117,
@@ -138,7 +148,6 @@ func (s *MapleServer) handlePlayerConnect(playerConnection *pb.RequestPlayerConn
 			},
 		},
 	}
-
 
 	s.sendToClient(charId, &senderResp)
 	s.broadcast(&broadcastResp, charId)
@@ -160,6 +169,7 @@ func (s *MapleServer) handleDropItem(item *pb.RequestDropItem) {
 	log.Print("send event in broadcast: %v\n", &resp)
 	s.broadcast(&resp, 0)
 }
+
 // listen to event from the stream
 func (s *MapleServer) listenToEvents(server pb.MapleService_EventsStreamServer, client Client) error {
 	for {
@@ -178,7 +188,7 @@ func (s *MapleServer) listenToEvents(server pb.MapleService_EventsStreamServer, 
 	}
 }
 
-func (s *MapleServer) startEventWorker () {
+func (s *MapleServer) startEventWorker() {
 
 	for {
 		log.Printf("wating for event\n")
@@ -194,14 +204,14 @@ func (s *MapleServer) startEventWorker () {
 			s.handleExpressionButton(eventMessage.event.GetExpressionButton(), eventMessage.charId)
 		case *pb.RequestEvent_PlayerConnect:
 			s.handlePlayerConnect(eventMessage.event.GetPlayerConnect(), eventMessage.charId)
-
+		case *pb.RequestEvent_PlayerStateUpdated:
+			s.handleUpdatePlayerState(eventMessage.event.GetPlayerStateUpdated(), eventMessage.charId)
 		}
 	}
 }
 
-
 func (s *MapleServer) EventsStream(server pb.MapleService_EventsStreamServer) error {
-	client := Client {
+	client := Client{
 		charId:         s.currentCharId,
 		networkHandler: server,
 	}
@@ -219,7 +229,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	mainServer := MainServer{
-		grpcServerAddr: "0.0.0.0:80",
+		grpcServerAddr: "0.0.0.0:3667",
 	}
 
 	startMainServer(mainServer)

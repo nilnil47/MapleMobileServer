@@ -12,6 +12,7 @@ message RequestEvent {
     PressButton pressButton = 2;
     ExpressionButton expressionButton = 3;
     RequestPlayerConnect playerConnect = 4;
+    UpdatePlayerState playerStateUpdated = 5;
   }
 }
 
@@ -22,6 +23,7 @@ message ResponseEvent {
     ExpressionButton expressionButton = 3;
     ResponsePlayerConnected playerConnected = 4;
     ResponseOtherPlayerConnected otherPlayerConnected = 5;
+    UpdatePlayerState otherPlayerStateUpdated = 6;
   }
 }
 
@@ -54,6 +56,12 @@ message PressButton {
 message ExpressionButton {
   int32 charid = 1;
   int32 expression = 2;
+}
+
+message UpdatePlayerState {
+  int32 charid = 1;
+  int32 state = 2;
+  Point pos = 3;
 }
 
 message RequestDropItem {
