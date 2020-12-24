@@ -31,3 +31,7 @@ jobs:
 
     - name: Build
       run: go build -v ./...
+
+    - name: create image
+      run: ls && pwd
+
