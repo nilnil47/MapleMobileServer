@@ -82,8 +82,7 @@ git push heroku <branch>
 
 ## kill the server on windows 
 ```
-Get-Process -Id (Get-NetTCPConnection -LocalPort 80).OwningProcess
-taskkill /PID <PID> /F
+Get-Process -Id (Get-NetTCPConnection -LocalPort 3667).OwningProcess taskkill /PID <PID> /F
 ```
 
 ## client
