@@ -85,3 +85,8 @@ git push heroku <branch>
 Get-Process -Id (Get-NetTCPConnection -LocalPort 80).OwningProcess
 taskkill /PID <PID> /F
 ```
+
+## client
+
+Repository of android client for the game can be found in: 
+ 
