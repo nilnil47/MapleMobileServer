@@ -5,7 +5,7 @@ For the generating the grpc files you will need:
 * go-grpc plugin
 * make
 
-###Install For Windows:
+### Install For Windows:
 
 Enable chocolaty (chocolaty is package manager for windows)
 
@@ -56,7 +56,15 @@ go mod download
 make grpc
 ```
 
-## using the heroku app 
+## run the server
+```
+go run main/main.go
+```
+
+## using the heroku app
+
+At the time this readme has written heroku has not have support for http2, so it does not possible to use
+heroku for the maple server. I will keep this heroku snippet code just because it has already written.   
 
 if you don't familiar with heroku checkout [this link](https://devcenter.heroku.com/articles/getting-started-with-go#set-up) 
 download the heroku cli from [heroku websitehttps](https://devcenter.heroku.com/articles/heroku-cli)
@@ -71,9 +79,6 @@ heroku create
 # push branch to heroku
 git push heroku <branch>
 ```
-## download the maple assets from google drive
-
-wget https://drive.google.com/u/0/uc?export=download&confirm=heN6&id=18Ta2zVqfiPbENb_PKCGh2iOsM1v20rFq
 
 ## kill the server on windows 
 ```

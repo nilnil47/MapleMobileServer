@@ -30,8 +30,17 @@ jobs:
         fi
 
     - name: Build
-      run: go build -v ./...
+      run: go build -v ./main
 
-    - name: create image
-      run: ls && pwd
+
+    - name: Publish to Github Packages Registry
+      uses: elgohr/Publish-Docker-Github-Action@master
+      with:
+        name: nilnil47/MapleMobileServer/server
+        registry: docker.pkg.github.com
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        dockerfile: Dockerfile-prod
+        tags: latest
+
 
